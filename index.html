@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>생활비 계산기</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fb;color:#202638;font-family:Arial,"Malgun Gothic",sans-serif}
+main{max-width:1050px;margin:30px auto;padding:0 18px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px}
+h1{margin:0;font-size:27px}h2{font-size:17px;margin:0 0 16px}.sub{color:#737d91;font-size:13px;margin-top:7px}
+.status{padding:9px 12px;border-radius:9px;background:#e7f8ef;color:#13724d;font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}.card{background:#fff;border:1px solid #e4e8f0;border-radius:15px;padding:20px;box-shadow:0 5px 20px #25345b0a;margin-bottom:14px}
+.metric-label{color:#7a8498;font-size:13px;margin-bottom:10px}.metric{font-size:27px;font-weight:800;overflow-wrap:anywhere}.hint{color:#7a8498;font-size:12px;margin-top:8px}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:12px;font-weight:bold;color:#5b657b;margin-bottom:7px}
+input,select{width:100%;border:1px solid #dce2ed;border-radius:9px;padding:11px;background:white;color:#202638;font:inherit;min-width:0}
+button{border:0;border-radius:9px;padding:10px 14px;font-weight:bold;cursor:pointer;font:inherit;font-size:13px}
+.primary{background:#5267df;color:#fff}.light{background:#eef1fa;color:#45506b}.danger{background:#fff0f1;color:#c03a4a}.actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}
+.message{display:none;margin-top:12px;padding:10px 12px;border-radius:9px;font-size:13px;line-height:1.5}.message.show{display:block}.ok{background:#e8f8f0;color:#13724d}.warn{background:#fff4df;color:#8a5c0a}.error{background:#fff0f1;color:#b22d3d}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid #e9edf4}th{font-size:11px;color:#7a8498;background:#fafbfe}td:last-child,th:last-child{text-align:right}.right{text-align:right!important}.empty{text-align:center;color:#7a8498;padding:24px 8px;font-size:13px}.table-scroll{overflow-x:auto}.smallbtn{padding:6px 8px;font-size:11px;margin:1px}.form4{display:grid;grid-template-columns:1fr 1.4fr 1fr 1fr;gap:10px}.form3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}.pill{display:inline-block;border-radius:30px;background:#f0f2fa;padding:4px 8px;font-size:11px;color:#626d83}
+footer{text-align:center;color:#8a93a5;font-size:11px;line-height:1.6;margin:22px 0}
+@media(max-width:760px){.cards{grid-template-columns:1fr}.columns{grid-template-columns:1fr}.form4{grid-template-columns:1fr 1fr}.form3{grid-template-columns:1fr}.metric{font-size:25px}}
+@media(max-width:480px){header{align-items:flex-start;flex-direction:column}.field-grid,.form4{grid-template-columns:1fr}.card{padding:16px}main{padding:0 12px;margin-top:20px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>생활비 계산기</h1><div class="sub">이번 달 생활비를 계획하고 하루 소비 기준을 확인하세요.</div></div>
+  <div class="status" id="jsStatus">화면 기능을 준비하는 중…</div>
+</header>
+
+<section class="cards">
+  <div class="card"><div class="metric-label">이번 달 총생활비</div><div class="metric" id="totalView">₩0</div><div class="hint" id="paydayView">지급일 미설정</div></div>
+  <div class="card"><div class="metric-label">사용 가능 잔액</div><div class="metric" id="leftView">₩0</div><div class="hint" id="spentView">총 사용 ₩0</div></div>
+  <div class="card"><div class="metric-label">하루 권장 소비액</div><div class="metric" id="dailyView">—</div><div class="hint" id="daysView">지급일을 설정해 주세요.</div></div>
+</section>
+
+<div class="columns">
+<section class="card">
+<h2>월 생활비 설정</h2>
+<div class="field-grid">
+  <div><label for="budget">이번 달 총생활비 (원)</label><input id="budget" type="number" min="0" step="1" placeholder="예: 500000"></div>
+  <div><label for="payday">다음 용돈 지급일</label><input id="payday" type="date"></div>
+</div>
+<div class="actions"><button class="primary" type="button" onclick="saveBudget()">설정 저장</button><button class="light" type="button" onclick="clearBudgetInputs()">입력 초기화</button></div>
+<div id="budgetMsg" class="message"></div>
+</section>
+
+<section class="card">
+<h2>이번 달 요약</h2>
+<table>
+<tr><td>일반 지출 합계</td><td class="right" id="expenseView">₩0</td></tr>
+<tr><td>고정지출 합계</td><td class="right" id="fixedView">₩0</td></tr>
+<tr><td>오늘 일반 지출</td><td class="right" id="todayView">₩0</td></tr>
+<tr><td>예산 사용률</td><td class="right" id="rateView">0%</td></tr>
+</table>
+<div id="alertMsg" class="message show ok">먼저 생활비와 지급일을 설정하세요.</div>
+</section>
+</div>
+
+<section class="card">
+<h2 id="expenseHeading">지출 내역 등록</h2>
+<div class="form4">
+  <div><label for="expenseAmount">금액 (원)</label><input id="expenseAmount" type="number" min="1" step="1" placeholder="예: 8500"></div>
+  <div><label for="expensePlace">사용처</label><input id="expensePlace" maxlength="60" placeholder="예: 학식, 카페"></div>
+  <div><label for="expenseDate">사용 날짜</label><input id="expenseDate" type="date"></div>
+  <div><label for="category">카테고리</label><select id="category"><option>식비</option><option>교통</option><option>카페·간식</option><option>쇼핑</option><option>문화·여가</option><option>생활용품</option><option>주거·공과금</option><option>기타</option></select></div>
+</div>
+<div class="actions"><button class="primary" type="button" id="expenseSaveBtn" onclick="saveExpense()">지출 추가</button><button class="light" type="button" id="cancelEditBtn" onclick="cancelEdit()" style="display:none">수정 취소</button></div>
+<div id="expenseMsg" class="message"></div>
+</section>
+
+<section class="card">
+<h2>지출 내역 <span class="pill" id="expenseCount">0건</span></h2>
+<div class="table-scroll"><table><thead><tr><th>날짜</th><th>사용처</th><th>카테고리</th><th class="right">금액</th><th>관리</th></tr></thead><tbody id="expenseRows"></tbody></table></div>
+<div class="empty" id="expenseEmpty">아직 등록된 지출이 없습니다.</div>
+</section>
+
+<section class="card">
+<h2>고정지출 등록</h2>
+<div class="form3">
+  <div><label for="fixedName">항목</label><input id="fixedName" maxlength="60" placeholder="예: 정기 구독료"></div>
+  <div><label for="fixedAmount">월 금액 (원)</label><input id="fixedAmount" type="number" min="1" step="1" placeholder="예: 15000"></div>
+  <button class="primary" type="button" onclick="addFixed()">고정지출 추가</button>
+</div>
+<div id="fixedMsg" class="message"></div>
+<div class="table-scroll" style="margin-top:14px"><table><thead><tr><th>항목</th><th class="right">월 금액</th><th>관리</th></tr></thead><tbody id="fixedRows"></tbody></table></div>
+<div class="empty" id="fixedEmpty">등록된 고정지출이 없습니다.</div>
+</section>
+<footer>데이터는 이 브라우저에 자동 저장됩니다. 브라우저 데이터 삭제 또는 다른 기기·브라우저 사용 시 저장 내용이 유지되지 않을 수 있습니다.</footer>
+</main>
+<script>
+(function(){
+"use strict";
+var KEY="living-cost-calculator-v2";
+var state={budget:0,payday:"",expenses:[],fixed:[],editId:null};
+var $=function(id){return document.getElementById(id);};
+var today=function(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+var won=function(n){return "₩"+Math.round(Number(n)||0).toLocaleString("ko-KR");};
+var id=function(){return String(Date.now())+"-"+Math.random().toString(36).slice(2);};
+var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
+function msg(target,text,type){var e=$(target);e.textContent=text;e.className="message show "+(type||"ok");}
+function hideMsg(target){$(target).className="message";}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({budget:state.budget,payday:state.payday,expenses:state.expenses,fixed:state.fixed}));return true;}catch(e){return false;}}
+function load(){try{var x=JSON.parse(localStorage.getItem(KEY)||"null");if(x){state.budget=Number(x.budget)||0;state.payday=typeof x.payday==="string"?x.payday:"";state.expenses=Array.isArray(x.expenses)?x.expenses:[];state.fixed=Array.isArray(x.fixed)?x.fixed:[];}}catch(e){}}
+function expenseSum(){return state.expenses.reduce(function(a,x){return a+(Number(x.amount)||0);},0);}
+function fixedSum(){return state.fixed.reduce(function(a,x){return a+(Number(x.amount)||0);},0);}
+function spent(){return expenseSum()+fixedSum();}
+function left(){return state.budget-spent();}
+function daysLeft(){if(!state.payday)return null;var n=new Date();n.setHours(0,0,0,0);var p=new Date(state.payday+"T00:00:00");if(isNaN(p.getTime()))return null;return Math.ceil((p-n)/86400000);}
+function todaySum(){return state.expenses.filter(function(x){return x.date===today();}).reduce(function(a,x){return a+(Number(x.amount)||0);},0);}
+function render(){
+$("totalView").textContent=won(state.budget);$("leftView").textContent=won(left());$("spentView").textContent="총 사용 "+won(spent());
+$("paydayView").textContent=state.payday?"다음 지급일: "+state.payday:"지급일 미설정";
+$("expenseView").textContent=won(expenseSum());$("fixedView").textContent=won(fixedSum());$("todayView").textContent=won(todaySum());
+var rate=state.budget>0?Math.round(spent()/state.budget*100):0;$("rateView").textContent=rate+"%";
+var d=daysLeft();if(d===null){$("dailyView").textContent="—";$("daysView").textContent="지급일을 설정해 주세요.";}else if(d>0){$("dailyView").textContent=won(Math.max(0,left())/d);$("daysView").textContent="지급일까지 "+d+"일 남음 (오늘 포함)";}else if(d===0){$("dailyView").textContent=won(Math.max(0,left()));$("daysView").textContent="오늘이 지급일입니다.";}else{$("dailyView").textContent="—";$("daysView").textContent="지급일이 지났습니다. 날짜를 다시 설정해 주세요.";}
+var alert=$("alertMsg");if(state.budget<=0){msg("alertMsg","먼저 생활비와 지급일을 설정하세요.","warn");}else if(spent()>state.budget){msg("alertMsg","예산을 "+won(spent()-state.budget)+" 초과했습니다.","error");}else if(d>0&&todaySum()>Math.max(0,left())/d){msg("alertMsg","오늘 지출이 하루 권장 소비액을 초과했습니다.","warn");}else{msg("alertMsg","현재 예산 범위 내에서 사용 중입니다.","ok");}
+var er=$("expenseRows");var sorted=state.expenses.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+$("expenseCount").textContent=sorted.length+"건";$("expenseEmpty").style.display=sorted.length?"none":"block";
+er.innerHTML=sorted.map(function(x){return "<tr><td>"+esc(x.date)+"</td><td>"+esc(x.place)+"</td><td><span class='pill'>"+esc(x.category)+"</span></td><td class='right'>"+won(x.amount)+"</td><td><button type='button' class='light smallbtn' onclick='editExpense(\""+esc(x.id)+"\")'>수정</button><button type='button' class='danger smallbtn' onclick='deleteExpense(\""+esc(x.id)+"\")'>삭제</button></td></tr>";}).join("");
+var fr=$("fixedRows");fr.innerHTML=state.fixed.map(function(x){return "<tr><td>"+esc(x.name)+"</td><td class='right'>"+won(x.amount)+"</td><td><button type='button' class='danger smallbtn' onclick='deleteFixed(\""+esc(x.id)+"\")'>삭제</button></td></tr>";}).join("");$("fixedEmpty").style.display=state.fixed.length?"none":"block";
+}
+window.saveBudget=function(){var b=$("budget").value;var p=$("payday").value;if(b.trim()===""||!Number.isSafeInteger(Number(b))||Number(b)<0){msg("budgetMsg","생활비는 0원 이상의 정수로 입력해 주세요.","error");return;}if(!p){msg("budgetMsg","다음 용돈 지급일을 선택해 주세요.","error");return;}state.budget=Number(b);state.payday=p;var ok=persist();render();msg("budgetMsg",ok?"생활비 설정을 저장했습니다.":"설정은 적용됐지만 브라우저 저장이 차단되어 새로고침 후 유지되지 않을 수 있습니다.",ok?"ok":"warn");};
+window.clearBudgetInputs=function(){$("budget").value="";$("payday").value="";hideMsg("budgetMsg");};
+window.saveExpense=function(){var a=Number($("expenseAmount").value),p=$("expensePlace").value.trim(),d=$("expenseDate").value,c=$("category").value;if(!Number.isSafeInteger(a)||a<=0){msg("expenseMsg","지출 금액은 1원 이상의 정수로 입력해 주세요.","error");return;}if(!p){msg("expenseMsg","사용처를 입력해 주세요.","error");return;}if(!d){msg("expenseMsg","사용 날짜를 선택해 주세요.","error");return;}var item={id:state.editId||id(),amount:a,place:p,date:d,category:c};if(state.editId){var ix=state.expenses.findIndex(function(x){return x.id===state.editId;});if(ix<0){msg("expenseMsg","수정할 지출을 찾을 수 없습니다.","error");return;}state.expenses[ix]=item;}else{state.expenses.push(item);}var wasEdit=!!state.editId;state.editId=null;$("expenseAmount").value="";$("expensePlace").value="";$("expenseDate").value=today();$("category").selectedIndex=0;$("expenseHeading").textContent="지출 내역 등록";$("expenseSaveBtn").textContent="지출 추가";$("cancelEditBtn").style.display="none";var ok=persist();render();msg("expenseMsg",ok?(wasEdit?"지출을 수정했습니다.":"지출을 등록했습니다."):"지출은 반영됐지만 브라우저 저장이 차단되어 새로고침 후 유지되지 않을 수 있습니다.",ok?"ok":"warn");};
+window.editExpense=function(key){var x=state.expenses.find(function(e){return e.id===key;});if(!x)return;state.editId=x.id;$("expenseAmount").value=x.amount;$("expensePlace").value=x.place;$("expenseDate").value=x.date;$("category").value=x.category;$("expenseHeading").textContent="지출 내역 수정";$("expenseSaveBtn").textContent="수정 저장";$("cancelEditBtn").style.display="inline-block";hideMsg("expenseMsg");$("expenseAmount").focus();};
+window.cancelEdit=function(){state.editId=null;$("expenseAmount").value="";$("expensePlace").value="";$("expenseDate").value=today();$("expenseHeading").textContent="지출 내역 등록";$("expenseSaveBtn").textContent="지출 추가";$("cancelEditBtn").style.display="none";hideMsg("expenseMsg");};
+window.deleteExpense=function(key){var x=state.expenses.find(function(e){return e.id===key;});if(!x||!confirm(x.place+" 지출 "+won(x.amount)+"을 삭제할까요?"))return;state.expenses=state.expenses.filter(function(e){return e.id!==key;});persist();render();msg("expenseMsg","지출 내역을 삭제했습니다.","ok");};
+window.addFixed=function(){var n=$("fixedName").value.trim(),a=Number($("fixedAmount").value);if(!n){msg("fixedMsg","고정지출 항목을 입력해 주세요.","error");return;}if(!Number.isSafeInteger(a)||a<=0){msg("fixedMsg","고정지출 금액은 1원 이상의 정수로 입력해 주세요.","error");return;}state.fixed.push({id:id(),name:n,amount:a});var ok=persist();$("fixedName").value="";$("fixedAmount").value="";render();msg("fixedMsg",ok?"고정지출을 추가했고 잔액에 반영했습니다.":"고정지출은 반영됐지만 브라우저 저장이 차단되어 새로고침 후 유지되지 않을 수 있습니다.",ok?"ok":"warn");};
+window.deleteFixed=function(key){var x=state.fixed.find(function(e){return e.id===key;});if(!x||!confirm(x.name+" 고정지출을 삭제할까요?"))return;state.fixed=state.fixed.filter(function(e){return e.id!==key;});persist();render();msg("fixedMsg","고정지출을 삭제했습니다.","ok");};
+window.addEventListener("error",function(e){var s=$("jsStatus");if(s){s.textContent="스크립트 오류가 발생했습니다.";s.style.background="#fff0f1";s.style.color="#b22d3d";}});
+try{load();$("budget").value=state.budget||"";$("payday").value=state.payday;$("expenseDate").value=today();render();$("jsStatus").textContent="기능이 정상적으로 준비되었습니다";}catch(e){$("jsStatus").textContent="초기화 오류: "+e.message;$("jsStatus").style.background="#fff0f1";$("jsStatus").style.color="#b22d3d";}
+})();
+</script>
+</body>
+</html>
